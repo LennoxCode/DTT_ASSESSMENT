@@ -14,9 +14,9 @@ public class Cell
 
     private int col;
 
-    private bool isWall;
+    public bool isWall {get; private set; }
     private SpriteRenderer renderer;
-    public Cell(int row, int col, int cellSize, GameObject wallPrefab)
+    public Cell(int row, int col, int cellSize, GameObject wallPrefab, Transform parent)
     {
        
         x = row * cellSize;
@@ -25,7 +25,7 @@ public class Cell
         this.col = col;
         if (row % 2 != 0 || col % 2 != 0) isWall = true;
         else isWall = false;
-        renderer = GameObject.Instantiate(wallPrefab, new Vector3(x, y, 0), Quaternion.identity).GetComponent<SpriteRenderer>();
+        renderer = GameObject.Instantiate(wallPrefab, new Vector3(x, y, 0), Quaternion.identity, parent).GetComponent<SpriteRenderer>();
         renderer.color = isWall ? Color.black : Color.white;
 
         // renderer = new SpriteRenderer();
@@ -38,5 +38,11 @@ public class Cell
     {
         this.isWall = isWall;
         renderer.color = isWall ? Color.black : Color.white;
+    }
+    
+    public void DestroyCell()
+    {
+        GameObject.Destroy(renderer.gameObject);
+        
     }
 }
