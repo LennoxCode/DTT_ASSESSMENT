@@ -14,14 +14,13 @@ public class InterfaceController : MonoBehaviour
     [SerializeField] private Maze mazeGen;
     void Start()
     {
+        OnWidthChanged();
+        OnHeightChanged();
+        OnSpeedValueChanged();
         
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    
 
     public enum Sliders
     {

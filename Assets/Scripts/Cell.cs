@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+/// <summary>
+/// 
+/// </summary>
 public class Cell
 {
     public int x { get; private set;}
@@ -19,13 +21,17 @@ public class Cell
     public Cell(int row, int col, int cellSize, GameObject wallPrefab, Transform parent)
     {
        
-        x = row * cellSize;
+        x = row * cellSize  ;
         y = col * cellSize;
         this.row = row;
         this.col = col;
         if (row % 2 != 0 || col % 2 != 0) isWall = true;
         else isWall = false;
-        renderer = GameObject.Instantiate(wallPrefab, new Vector3(x, y, 0), Quaternion.identity, parent).GetComponent<SpriteRenderer>();
+        renderer = GameObject.Instantiate(wallPrefab, 
+            new Vector3(x, y, 0) + parent.position, 
+            Quaternion.identity, 
+            parent)
+            .GetComponent<SpriteRenderer>();
         renderer.color = isWall ? Color.black : Color.white;
 
         // renderer = new SpriteRenderer();
