@@ -9,6 +9,8 @@ public class InterfaceController : MonoBehaviour
     [SerializeField] private Text widthDisplay;
     [SerializeField] private Text heightDisplay;
     [SerializeField] private Slider heightSlider;
+    [SerializeField] private Text speedDisplay;
+    [SerializeField] private Slider speedSlider;
     [SerializeField] private Maze mazeGen;
     void Start()
     {
@@ -21,6 +23,20 @@ public class InterfaceController : MonoBehaviour
         
     }
 
+    public enum Sliders
+    {
+        Width, Height, Speed
+    }
+
+    public void OnSpeedValueChanged()
+    {
+      
+        float sliderVal = speedSlider.value;
+        speedDisplay.text = "" + sliderVal;
+        mazeGen.setSpeed(sliderVal);
+                  
+        
+    }
     public void OnWidthChanged()
     {
         int sliderVal = (int) widthSlider.value;

@@ -9,6 +9,7 @@ public class Maze : MonoBehaviour
     [SerializeField] private int mazeWidth;
     [SerializeField] private int mazeHeight;
     [SerializeField] private GameObject wallPrefab;
+    [SerializeField] public float speed;
     private Cell[,] cells;
     // Start is called before the first frame update
   
@@ -34,6 +35,7 @@ public class Maze : MonoBehaviour
 
     public void ButtonPressed()
     {
+        StopAllCoroutines();
         GenerateGrid();
         StartCoroutine(GenerateMaze());
         
@@ -58,7 +60,7 @@ public class Maze : MonoBehaviour
                 if (cells[wallOffset.x, wallOffset.y].isWall)
                 {
                     cells[wallOffset.x, wallOffset.y].SetWall(false);
-                    yield return new WaitForSeconds(0.0f);
+                    if(speed > 0)yield return new WaitForSeconds(speed);
                 }
                
                 visitedCells.Push(neighbor);
@@ -68,6 +70,7 @@ public class Maze : MonoBehaviour
             
 
         }
+        yield return new WaitForSeconds(0.0f);
         Debug.Log("finished Maze generation");
     }
 
@@ -89,5 +92,10 @@ public class Maze : MonoBehaviour
     public void SetHeight(int newHeight)
     {
         mazeHeight = newHeight;
+    }
+
+    public void setSpeed(float speed)
+    {
+        this.speed = speed;
     }
 }
