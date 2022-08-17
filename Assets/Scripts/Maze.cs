@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using MyNamespace;
 using UnityEngine;
+
 
 public class Maze : MonoBehaviour
 {
@@ -12,10 +14,9 @@ public class Maze : MonoBehaviour
     [SerializeField] private GameObject wallPrefab;
     [SerializeField] public float speed;
     
-    // Start is called before the first frame update
     private Cell[,] cells;
 
-    public void GenerateGrid()
+    private void ClearGrid()
     {
         if (cells != null)
         {
@@ -24,6 +25,10 @@ public class Maze : MonoBehaviour
                 cell.DestroyCell();
             }
         }
+    }
+    public void GenerateGrid()
+    {
+        ClearGrid();
         cells = new Cell[mazeWidth, mazeHeight];
         for (int x = 0; x < mazeWidth; x++)
         {
@@ -33,15 +38,9 @@ public class Maze : MonoBehaviour
             }
         }
     }
-    public void GenerateGrid2()
+    private void GenerateGridWallsOnly()
     {
-        if (cells != null)
-        {
-            foreach (var cell in cells)
-            {
-                cell.DestroyCell();
-            }
-        }
+        ClearGrid();
         cells = new Cell[mazeWidth, mazeHeight];
         for (int x = 0; x < mazeWidth; x++)
         {
@@ -51,11 +50,27 @@ public class Maze : MonoBehaviour
             }
         }
     }
-    public void ButtonPressed()
+    public void RunGeneration(MazeAlgorithm algorithm)
     {
         StopAllCoroutines();
-        GenerateGrid();
-        StartCoroutine(GenerateMazeKruskal());
+        ClearGrid();
+        switch (algorithm)
+        {
+            case MazeAlgorithm.DepthFirst:
+                GenerateGrid();
+                StartCoroutine(GenerateMaze());
+                break;
+            case MazeAlgorithm.Prim:
+                GenerateGridWallsOnly();
+                StartCoroutine(GenerateMazePrim());
+                break;
+            case MazeAlgorithm.Kruskal:
+                GenerateGrid();
+                StartCoroutine(GenerateMazeKruskal());
+                break; 
+        }
+        
+       
         
     }
     private IEnumerator GenerateMaze()
@@ -190,6 +205,21 @@ public class Maze : MonoBehaviour
         yield return new WaitForSeconds(0.0f);
         Debug.Log("finished Maze generation");
     }
+
+    private IEnumerator GenerateMazeEller()
+    {
+        List<HashSet<Cell>> cellSets = new List<HashSet<Cell>>();
+        for (int y = 0; y < mazeHeight; y++)
+        {
+            for (int x = 0; x < mazeWidth; x++)
+            {
+                cellSets.Add(new HashSet<Cell> {cells[x, y]});
+            }
+        }
+        yield return new WaitForSeconds(0.0f);
+        Debug.Log("finished Maze generation");
+    }
+
     private List<Cell> GetNeighbors(Cell cell)
     {
         List<Cell> neighbors = new List<Cell>();
