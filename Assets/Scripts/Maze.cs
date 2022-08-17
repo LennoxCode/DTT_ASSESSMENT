@@ -54,8 +54,8 @@ public class Maze : MonoBehaviour
     public void ButtonPressed()
     {
         StopAllCoroutines();
-        GenerateGrid2();
-        StartCoroutine(GenerateMazePrim());
+        GenerateGrid();
+        StartCoroutine(GenerateMazeKruskal());
         
     }
     private IEnumerator GenerateMaze()
@@ -125,6 +125,70 @@ public class Maze : MonoBehaviour
         yield return new WaitForSeconds(0.0f);
         Debug.Log("finished Maze generation");
         
+    }
+
+    private IEnumerator GenerateMazeKruskal()
+    {
+        HashSet<Cell>[,] cellSets = new HashSet<Cell>[mazeWidth, mazeHeight];
+        List<Cell> walls = new List<Cell>();
+        int setCount = 0;
+        for (int x = 0; x < mazeWidth; x++)
+        {
+            for (int y = 0; y < mazeHeight; y++)
+            {
+                if (!cells[x, y].isWall)
+                {
+                    cellSets[x, y] = new HashSet<Cell> {cells[x, y]};
+                    setCount++;
+                }
+                else if(x % 2 != 0 ^ y % 2 != 0)
+                {
+                    walls.Add((cells[x, y]));
+                }
+               
+            }
+        }
+        while (setCount > 1)
+        {
+            Cell currWall = walls[Random.Range(0, walls.Count)];
+            walls.Remove(currWall);
+            if (currWall.x % 2 != 0 && currWall.y % 2 == 0)
+            {
+                HashSet <Cell> set1 = cellSets[currWall.x - 1, currWall.y];
+                HashSet <Cell> set2 = cellSets[currWall.x + 1, currWall.y];
+                if (!set1.SetEquals(set2))
+                {
+                    
+                    currWall.SetWall(false);
+                    set1.UnionWith(set2);
+                    foreach (var cell in set1)
+                    {
+                        cellSets[cell.x, cell.y] = set1;
+                    }
+                    setCount--;
+                }
+            }
+            else
+            {
+                HashSet <Cell> set1 = cellSets[currWall.x, currWall.y - 1];
+                HashSet <Cell> set2 = cellSets[currWall.x, currWall.y + 1];
+                if (!set1.SetEquals(set2))
+                {
+                    currWall.SetWall(false);
+                    set1.UnionWith(set2);
+                    foreach (var cell in set1)
+                    {
+                        cellSets[cell.x, cell.y] = set1;
+                    }
+                    //Debug.LogError(set1.Count);
+                    setCount--;
+                }
+                
+            }
+            if(speed > 0)yield return new WaitForSeconds(speed);
+        }
+        yield return new WaitForSeconds(0.0f);
+        Debug.Log("finished Maze generation");
     }
     private List<Cell> GetNeighbors(Cell cell)
     {
