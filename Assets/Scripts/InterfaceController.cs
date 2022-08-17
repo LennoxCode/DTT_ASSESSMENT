@@ -32,7 +32,7 @@ public class InterfaceController : MonoBehaviour
       
         float sliderVal = speedSlider.value;
         speedDisplay.text = "" + sliderVal;
-        mazeGen.setSpeed(sliderVal);
+        mazeGen.SetSpeed(sliderVal);
                   
         
     }
