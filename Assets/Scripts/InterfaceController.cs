@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System;
+using DefaultNamespace;
 
 namespace MyNamespace
 {
@@ -23,7 +24,7 @@ namespace MyNamespace
         [SerializeField] private Slider heightSlider;
         [SerializeField] private Text speedDisplay;
         [SerializeField] private Slider speedSlider;
-        [SerializeField] private Maze mazeGen;
+        [SerializeField] private BaseMaze mazeGen;
         
         void Start()
         {
@@ -52,12 +53,9 @@ namespace MyNamespace
         /// </summary>
         public void OnSpeedValueChanged()
         {
-      
             float sliderVal = speedSlider.value;
             speedDisplay.text = "" + sliderVal;
             mazeGen.SetSpeed(sliderVal);
-                  
-        
         }
         /// <summary>
         /// Callback function when the slider value of the width slider changes the interface is updated accordingly

@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 namespace DefaultNamespace
 {
     public class Cursor : MonoBehaviour
     {
+        [SerializeField] private Color cursorColor;
         [SerializeField] private float fadeSpeed;
         [SerializeField] private SpriteRenderer renderer;
         private float alpha;
@@ -13,8 +13,7 @@ namespace DefaultNamespace
         private void Start()
         {
             alpha = 1;
-            Color test = Color.magenta;
-            renderer.color = test;
+            renderer.color = cursorColor;
             StartCoroutine(Fade());
         }
 
@@ -23,7 +22,7 @@ namespace DefaultNamespace
             while (alpha >= 0)
             {
                 alpha -= fadeSpeed * Time.deltaTime;
-                renderer.color = new Color(255, 0, 255, alpha);
+                renderer.color = new Color(cursorColor.r, cursorColor.g, cursorColor.b, alpha);
                 yield return new WaitForEndOfFrame(); 
             }
             Destroy(gameObject);

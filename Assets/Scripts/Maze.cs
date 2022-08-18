@@ -1,7 +1,7 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using DefaultNamespace;
 using MyNamespace;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -11,18 +11,8 @@ using Random = UnityEngine.Random;
 /// of the maze and a private reference to a two dimensional array of cell objects which represent on point in the grid
 /// This class provided all the necessary functions and operations to generate maze 
 /// </summary>
-public class Maze : MonoBehaviour
+public class Maze : BaseMaze
 {
-    [SerializeField] private int cellSize;
-    [SerializeField] private int mazeWidth;
-    [SerializeField] private int mazeHeight;
-    [SerializeField] private GameObject wallPrefab;
-    [SerializeField] private float speed;
-    [SerializeField] private GameObject cursor;
-    public static Action<Vector2Int> NewMazeEvent;
-    public Action OnMazeGenFinished;
-    private Cell[,] cells;
-
     private void ClearGrid()
     {
         if (cells != null)
@@ -37,7 +27,7 @@ public class Maze : MonoBehaviour
     /// generates a new grid of the size given my the class variables. if another grid already exists the already
     /// present cells are reused instead of destroyed because the instantiation of the GameObjects is very expensive.
     /// </summary>
-    public void GenerateGrid()
+    public override void GenerateGrid()
     {
 
         if (cells != null)
@@ -92,7 +82,7 @@ public class Maze : MonoBehaviour
     /// about the individual implementations of each algorithm and the preparation needed to run it. 
     /// </summary>
     /// <param name="algorithm">An enum which represents any of the possible options for maze generation</param>
-    public void RunGeneration(MazeAlgorithm algorithm)
+    public override void RunGeneration(MazeAlgorithm algorithm)
     {
         // stopping old maze generation if it is already running
         StopAllCoroutines();
@@ -131,10 +121,10 @@ public class Maze : MonoBehaviour
     /// and are thread safe which enables concurrency 
     /// is applied
     /// </returns>
-    private IEnumerator GenerateMaze()
+    protected override IEnumerator GenerateMaze()
     {
         var initialCell = cells[0, 0];
-        var frontier = new Stack<Cell>();
+        var frontier = new Stack<BaseCell>();
         initialCell.visited = true;
         initialCell.SetWall(false);
         frontier.Push(initialCell);
@@ -185,13 +175,13 @@ public class Maze : MonoBehaviour
     /// </remarks>
     /// <returns> WaitForSeconds which sets the delay after each step of the algorithm. 
     /// </returns>
-    private IEnumerator GenerateMazePrim()
+    protected override IEnumerator GenerateMazePrim()
     {
         var rng = new System.Random();
         var initialCell = cells[0, 0];
         cells[0, 0].SetWall(false);
         
-        var frontier = new List<Cell>();
+        var frontier = new List<BaseCell>();
         frontier.AddRange(GetNeighbors(initialCell));
         while (frontier.Count > 0)
         {
@@ -231,10 +221,10 @@ public class Maze : MonoBehaviour
     /// </remarks>
     /// <returns> WaitForSeconds which sets the delay after each step of the algorithm. 
     /// </returns>
-    private IEnumerator GenerateMazeKruskal()
+    protected override IEnumerator GenerateMazeKruskal()
     {
-        var cellSets = new HashSet<Cell>[mazeWidth, mazeHeight];
-        var walls = new List<Cell>();
+        var cellSets = new HashSet<BaseCell>[mazeWidth, mazeHeight];
+        var walls = new List<BaseCell>();
         int setCount = 0;
         for (int x = 0; x < mazeWidth; x++)
         {
@@ -242,7 +232,7 @@ public class Maze : MonoBehaviour
             {
                 if (!cells[x, y].isWall)
                 {
-                    cellSets[x, y] = new HashSet<Cell> {cells[x, y]};
+                    cellSets[x, y] = new HashSet<BaseCell> {cells[x, y]};
                     setCount++;
                 }
                 else if(x % 2 != 0 ^ y % 2 != 0 && (!(mazeWidth % 2 ==0 && x == mazeWidth-1) && !(mazeHeight % 2 ==0 && y == mazeHeight-1)))
@@ -256,8 +246,8 @@ public class Maze : MonoBehaviour
         {
             var currWall = walls[Random.Range(0, walls.Count)];
             walls.Remove(currWall);
-            HashSet<Cell> set1;
-            HashSet<Cell> set2;
+            HashSet<BaseCell> set1;
+            HashSet<BaseCell> set2;
             if (currWall.x % 2 != 0 && currWall.y % 2 == 0)
             {
                 set1 = cellSets[currWall.x - 1, currWall.y];
@@ -290,12 +280,12 @@ public class Maze : MonoBehaviour
 
     private IEnumerator GenerateMazeEller()
     {
-        List<HashSet<Cell>> cellSets = new List<HashSet<Cell>>();
+        List<HashSet<BaseCell>> cellSets = new List<HashSet<BaseCell>>();
         for (int y = 0; y < mazeHeight; y++)
         {
             for (int x = 0; x < mazeWidth; x++)
             {
-                cellSets.Add(new HashSet<Cell> {cells[x, y]});
+                cellSets.Add(new HashSet<BaseCell> {cells[x, y]});
             }
         }
         yield return new WaitForSeconds(0.0f);
@@ -306,9 +296,9 @@ public class Maze : MonoBehaviour
     /// </summary>
     /// <param name="cell"> The cell of which to retrieve the neighbors</param>
     /// <returns> A list of cells which are in bounds and yet not visited </returns>
-    private List<Cell> GetNeighbors(Cell cell)
+    private List<BaseCell> GetNeighbors(BaseCell cell)
     {
-        var neighbors = new List<Cell>();
+        var neighbors = new List<BaseCell>();
         if (cell.x > 1 && !cells[cell.x - 2, cell.y].visited) neighbors.Add(cells[cell.x - 2, cell.y]);
         if (cell.y > 1 && !cells[cell.x, cell.y - 2].visited) neighbors.Add(cells[cell.x , cell.y- 2]);
         if (cell.x < mazeWidth - 2 && !cells[cell.x + 2, cell.y].visited) neighbors.Add(cells[cell.x + 2, cell.y]);
@@ -320,9 +310,9 @@ public class Maze : MonoBehaviour
     /// </summary>
     /// <param name="cell"> The cell of which to retrieve the neighbors</param>
     /// <returns> A list of walls which are in bounds and yet not visited </returns>
-    private List<Cell> GetWalls(Cell cell)
+    private List<BaseCell> GetWalls(BaseCell cell)
     {
-        var neighbors = new List<Cell>();
+        var neighbors = new List<BaseCell>();
         if (cell.x > 0 && !cells[cell.x - 1, cell.y].visited) neighbors.Add(cells[cell.x - 1, cell.y]);
         if (cell.y > 0 && !cells[cell.x, cell.y - 1].visited) neighbors.Add(cells[cell.x , cell.y- 1]);
         if (cell.x < mazeWidth - 1 && !cells[cell.x + 1, cell.y].visited) neighbors.Add(cells[cell.x + 1, cell.y]);
@@ -338,18 +328,5 @@ public class Maze : MonoBehaviour
                 transform)
             ;
     }
-    public void SetWidth(int newWidth)
-    {
-        mazeWidth = newWidth;
-    }
-
-    public void SetHeight(int newHeight)
-    {
-        mazeHeight = newHeight;
-    }
-
-    public void SetSpeed(float speed)
-    {
-        this.speed = speed;
-    }
+  
 }

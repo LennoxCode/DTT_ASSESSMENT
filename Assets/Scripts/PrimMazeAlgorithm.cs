@@ -4,11 +4,11 @@ using UnityEngine;
 
 namespace DefaultNamespace
 {
-    public class PrimMazeAlgorithm : IMazeAlgorithm
+    public class PrimMazeAlgorithm
     {
-        public Cell[,] GenerateGrid(int mazeWidth, int mazeHeight, GameObject wallPrefab, Transform transform)
+        public BaseCell[,] GenerateGrid(int mazeWidth, int mazeHeight, GameObject wallPrefab, Transform transform)
         {
-            Cell[,] cells = new Cell[mazeWidth, mazeHeight];
+            BaseCell[,] cells = new Cell[mazeWidth, mazeHeight];
             for (int x = 0; x < mazeWidth; x++)
             {
                 for (int y = 0; y < mazeHeight; y++)
@@ -26,7 +26,7 @@ namespace DefaultNamespace
             Cell inital = cells[0, 0];
             inital.SetWall(false);
             inital.visited = true;
-            List<Cell> walls = new List<Cell>();
+            List<BaseCell> walls = new List<BaseCell>();
             
             yield return new WaitForSeconds(0.0f);
         }

@@ -1,7 +1,5 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+
 /// <summary>
 /// Script to handle input for moving the camera and zooming to enable the player to see mazes of varying sizes as
 /// clear as possible. 
@@ -57,6 +55,6 @@ public class CameraController : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, newPosition, Time.deltaTime * movementTime);
         newZoom -= zoomAmount * Input.mouseScrollDelta.y;
         newZoom = Mathf.Clamp(newZoom, 2, 200);
-        camera.orthographicSize = Mathf.Lerp(newZoom, camera.orthographicSize, Time.deltaTime * movementTime); 
+        camera.orthographicSize = Mathf.Lerp(newZoom, camera.orthographicSize, Time.deltaTime * zoomTime); 
     }
 }
