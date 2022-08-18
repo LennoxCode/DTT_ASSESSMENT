@@ -15,7 +15,7 @@ public class CameraController : MonoBehaviour
         newPosition = transform.position;
         newZoom = Camera.main.orthographicSize;
     }
-
+    
     // Update is called once per frame
     void Update()
     {

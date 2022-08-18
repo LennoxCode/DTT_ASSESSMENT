@@ -13,7 +13,7 @@ namespace DefaultNamespace
             {
                 for (int y = 0; y < mazeHeight; y++)
                 {
-                    cells[x, y] = new Cell(x, y, 1, wallPrefab, transform);
+                   // cells[x, y] = new Cell(x, y, 1, wallPrefab, transform);
                 }
             }
 

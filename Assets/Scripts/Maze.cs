@@ -1,19 +1,21 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using MyNamespace;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 
 public class Maze : MonoBehaviour
 {
     [SerializeField] private int cellSize;
-
     [SerializeField] private int mazeWidth;
     [SerializeField] private int mazeHeight;
     [SerializeField] private GameObject wallPrefab;
-    [SerializeField] public float speed;
-    
+    [SerializeField] private float speed;
+
+    public static Action<Vector2Int> NewMazeEvent;
     private Cell[,] cells;
 
     private void ClearGrid()
@@ -28,15 +30,38 @@ public class Maze : MonoBehaviour
     }
     public void GenerateGrid()
     {
-        ClearGrid();
-        cells = new Cell[mazeWidth, mazeHeight];
-        for (int x = 0; x < mazeWidth; x++)
+       // ClearGrid();
+        
+        if (cells != null)
         {
-            for (int y = 0; y < mazeHeight; y++)
+            var oldCells = cells;
+            cells = new Cell[mazeWidth, mazeHeight];
+            for (int x = 0; x < mazeWidth; x++)
             {
-                cells[x, y] = new Cell(x, y, cellSize, wallPrefab, transform);
+                for (int y = 0; y < mazeHeight; y++)
+                {
+                    if (x < oldCells.GetLength(0) && y < oldCells.GetLength(1))
+                    {
+                        cells[x,y] = oldCells[x, y];
+                        cells[x,y].Reset();
+                    }
+                    else cells[x, y] = new Cell(x, y, cellSize, wallPrefab, transform);
+                }
+            }
+
+        }
+        else
+        {
+            cells = new Cell[mazeWidth, mazeHeight];
+            for (int x = 0; x < mazeWidth; x++)
+            {
+                for (int y = 0; y < mazeHeight; y++)
+                {
+                    cells[x, y] = new Cell(x, y, cellSize, wallPrefab, transform);
+                }
             }
         }
+        NewMazeEvent?.Invoke(new Vector2Int(mazeWidth ,mazeHeight));
     }
     private void GenerateGridWallsOnly()
     {
@@ -53,7 +78,7 @@ public class Maze : MonoBehaviour
     public void RunGeneration(MazeAlgorithm algorithm)
     {
         StopAllCoroutines();
-        ClearGrid();
+       // ClearGrid();
         switch (algorithm)
         {
             case MazeAlgorithm.DepthFirst:
@@ -75,42 +100,37 @@ public class Maze : MonoBehaviour
     }
     private IEnumerator GenerateMaze()
     {
-        Cell initialCell = cells[0, 0];
+        var initialCell = cells[0, 0];
         var visitedCells = new Stack<Cell>();
         cells[0, 0].visited = true;
         cells[0, 0].SetWall(false);
         visitedCells.Push(cells[0,0]);
-        GameObject cursor = Instantiate(wallPrefab, 
-                new Vector3(initialCell.x, initialCell.y, 10) + transform.position, 
+        //initiating an additional sprite renderer to show where the algorithm is modifying walls
+        var transform1 = transform;
+        var cursor = Instantiate(wallPrefab, 
+                new Vector3(initialCell.x, initialCell.y, 10) + transform1.position, 
                 Quaternion.identity, 
-                transform)
+                transform1)
             ;
         cursor.GetComponent<SpriteRenderer>().color = Color.magenta;
         while (visitedCells.Count > 0)
         {
-            Cell currCell = visitedCells.Pop();
-            List<Cell> neighbors = GetNeighbors(currCell);
-            
-            if (neighbors.Count > 0)
+            var currCell = visitedCells.Pop();
+            var neighbors = GetNeighbors(currCell);
+
+            if (neighbors.Count <= 0) continue;
+            visitedCells.Push(currCell);
+            var neighbor = neighbors[Random.Range(0, neighbors.Count )];
+            neighbor.visited = true;
+            var wallOffset =  new Vector2Int((currCell.x + neighbor.x) / 2, (currCell.y + neighbor.y) / 2);
+            if (cells[wallOffset.x, wallOffset.y].isWall)
             {
-                visitedCells.Push(currCell);
-                Cell neighbor = neighbors[Random.Range(0, neighbors.Count )];
-                neighbor.visited = true;
-                Vector2Int wallOffset =  new Vector2Int((currCell.x + neighbor.x) / 2, (currCell.y + neighbor.y) / 2);
-                if (cells[wallOffset.x, wallOffset.y].isWall)
-                {
-                    cells[wallOffset.x, wallOffset.y].SetWall(false);
-                    cursor.transform.position = new Vector3(neighbor.x, neighbor.y, -5) + transform.position;
-                    if(speed > 0)yield return new WaitForSeconds(speed);
+                cells[wallOffset.x, wallOffset.y].SetWall(false);
+                cursor.transform.position = new Vector3(neighbor.x, neighbor.y, -5) + transform.position;
+                if(speed > 0)yield return new WaitForSeconds(speed);
                     
-                }
-               
-                visitedCells.Push(neighbor);
-                
             }
-
-            
-
+            visitedCells.Push(neighbor);
         }
         yield return new WaitForSeconds(0.0f);
         Destroy(cursor);

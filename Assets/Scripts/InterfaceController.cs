@@ -39,6 +39,7 @@ namespace MyNamespace
             {
                 algoDropdown.options.Add(new Dropdown.OptionData(algo.ToString()));
             }
+            algoDropdown.captionText.text = "" + (MazeAlgorithm)algoDropdown.value;
         }
      
         public void OnSpeedValueChanged()
@@ -66,6 +67,10 @@ namespace MyNamespace
             mazeGen.GenerateGrid();
         }
 
+        public void OnDropDownChanged()
+        {
+            algoDropdown.captionText.text = "" + (MazeAlgorithm)algoDropdown.value;
+        }
         public void OnGeneratePressed()
         {
             mazeGen.RunGeneration((MazeAlgorithm)algoDropdown.value);
