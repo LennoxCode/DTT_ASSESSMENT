@@ -1,23 +1,41 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+/// <summary>
+/// Script to handle input for moving the camera and zooming to enable the player to see mazes of varying sizes as
+/// clear as possible. 
+/// </summary>
 public class CameraController : MonoBehaviour
 {
+    [Header("Options")]
     [SerializeField] private float movementSpeed;
     [SerializeField] private float movementTime;
-
     [SerializeField] private float zoomAmount;
+    [SerializeField] private float zoomTime;
+    [Header("Setup Fields")]
     [SerializeField] private Vector3 newPosition;
+    [SerializeField] private Camera camera;
     private float newZoom;
+    
     void Start()
     {
         newPosition = transform.position;
-        newZoom = Camera.main.orthographicSize;
+        newZoom = camera.orthographicSize;
     }
     
-    // Update is called once per frame
     void Update()
+    {
+        ApplyInput();
+    }
+    /// <summary>
+    /// Handles the input by the player.
+    /// In the first step a new position is adding all the directions given by the buttons pressed
+    /// are added together - this enables diagonal movement.
+    /// in the second the actual position of the camera is calculating by linearly interpolating between the
+    /// old and the new value based on the speed selected in the editor
+    /// </summary>
+    private void ApplyInput()
     {
         if (Input.GetKey(KeyCode.A))
         {
@@ -36,14 +54,9 @@ public class CameraController : MonoBehaviour
             newPosition += (Vector3.down * movementSpeed); 
             
         }
-        //newPosition += Ve
-        //newPosition.x = Mathf.Max(0,Mathf.Min(newPosition.x, 90));
-        //newPosition.z = Mathf.Min(-20, Mathf.Max(newPosition.z, -130));
         transform.position = Vector3.Lerp(transform.position, newPosition, Time.deltaTime * movementTime);
-   
         newZoom -= zoomAmount * Input.mouseScrollDelta.y;
-        Camera.main.orthographicSize = newZoom;
-        //if(newZoom.y < 10 || newZoom.y > 70) newZoom -= zoomAmount * Input.mouseScrollDelta.y;
-        //Camera.main.transform.localPosition = Vector3.Lerp(Camera.main.transform.localPosition, newZoom, Time.deltaTime * movementTime);
+        newZoom = Mathf.Clamp(newZoom, 2, 200);
+        camera.orthographicSize = Mathf.Lerp(newZoom, camera.orthographicSize, Time.deltaTime * movementTime); 
     }
 }

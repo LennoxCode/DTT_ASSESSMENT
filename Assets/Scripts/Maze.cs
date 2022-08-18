@@ -6,7 +6,11 @@ using MyNamespace;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-
+/// <summary>
+/// this class represents the model for maze generation. It holds values for all relevant maze options like the size
+/// of the maze and a private reference to a two dimensional array of cell objects which represent on point in the grid
+/// This class provided all the necessary functions and operations to generate maze 
+/// </summary>
 public class Maze : MonoBehaviour
 {
     [SerializeField] private int cellSize;
@@ -28,6 +32,10 @@ public class Maze : MonoBehaviour
             }
         }
     }
+    /// <summary>
+    /// generates a new grid of the size given my the class variables. if another grid already exists the already
+    /// present cells are reused instead of destroyed because the instantiation of the GameObjects is very expensive.
+    /// </summary>
     public void GenerateGrid()
     {
        // ClearGrid();
@@ -63,6 +71,10 @@ public class Maze : MonoBehaviour
         }
         NewMazeEvent?.Invoke(new Vector2Int(mazeWidth ,mazeHeight));
     }
+    /// <summary>
+    /// this function also generates a grid of the given size. The main difference is that this grid exclusively
+    /// consists of walls because the Prim algorithm demands a grid of walls 
+    /// </summary>
     private void GenerateGridWallsOnly()
     {
         ClearGrid();
@@ -75,10 +87,15 @@ public class Maze : MonoBehaviour
             }
         }
     }
+    /// <summary>
+    /// a public wrapper function which enables the controller to select grid options without further worrying
+    /// about the individual implementations of each algorithm and the preparation needed to run it. 
+    /// </summary>
+    /// <param name="algorithm">An enum which represents any of the possible options for maze generation</param>
     public void RunGeneration(MazeAlgorithm algorithm)
     {
+        // stopping old maze generation if it is already running
         StopAllCoroutines();
-       // ClearGrid();
         switch (algorithm)
         {
             case MazeAlgorithm.DepthFirst:
@@ -98,13 +115,29 @@ public class Maze : MonoBehaviour
        
         
     }
+    
+    /// <summary>
+    /// <c>GenerateMaze</c> uses the depth first algorithm to generate a perfect maze.   
+    /// </summary>
+    /// <remarks>
+    /// This algorithm is primitive
+    /// compared to the other ones. It holds a stack which references each cell which should be visited.
+    /// In each iteration the stack is popped and one of the neighbors is randomly selected and the wall is deleted if
+    /// it exists. This is done until no unvisited cells are left.
+    /// </remarks>
+    /// <returns> WaitForSeconds which is changed in the interfaceController and sets the delay after each step of the
+    /// algorithm. if the timer is zero there is no delay. using a coroutine for the implementation also
+    /// opens the door for parallel execution of the algorithm because multiple coroutines can be started
+    /// and are thread safe which enables concurrency 
+    /// is applied
+    /// </returns>
     private IEnumerator GenerateMaze()
     {
         var initialCell = cells[0, 0];
-        var visitedCells = new Stack<Cell>();
+        var frontier = new Stack<Cell>();
         cells[0, 0].visited = true;
         cells[0, 0].SetWall(false);
-        visitedCells.Push(cells[0,0]);
+        frontier.Push(cells[0,0]);
         //initiating an additional sprite renderer to show where the algorithm is modifying walls
         var transform1 = transform;
         var cursor = Instantiate(wallPrefab, 
@@ -113,59 +146,90 @@ public class Maze : MonoBehaviour
                 transform1)
             ;
         cursor.GetComponent<SpriteRenderer>().color = Color.magenta;
-        while (visitedCells.Count > 0)
+        while (frontier.Count > 0)
         {
-            var currCell = visitedCells.Pop();
+            var currCell = frontier.Pop();
             var neighbors = GetNeighbors(currCell);
 
             if (neighbors.Count <= 0) continue;
-            visitedCells.Push(currCell);
+            frontier.Push(currCell);
             var neighbor = neighbors[Random.Range(0, neighbors.Count )];
             neighbor.visited = true;
-            var wallOffset =  new Vector2Int((currCell.x + neighbor.x) / 2, (currCell.y + neighbor.y) / 2);
-            if (cells[wallOffset.x, wallOffset.y].isWall)
+            // the position of the wall can be easily calculated by just calculating the median
+            var wallPos =  new Vector2Int((currCell.x + neighbor.x) / 2, (currCell.y + neighbor.y) / 2);
+            // theoretically it is redundant to see if a wall is present. however this enables me to only 
+            // use the delay if the a wall got deleted which speeds up the animation for large mazes.
+            if (cells[wallPos.x, wallPos.y].isWall)
             {
-                cells[wallOffset.x, wallOffset.y].SetWall(false);
+                cells[wallPos.x, wallPos.y].SetWall(false);
                 cursor.transform.position = new Vector3(neighbor.x, neighbor.y, -5) + transform.position;
+                // only return if speed is greater zero because WaitForSeconds(0) still waits for next frame
                 if(speed > 0)yield return new WaitForSeconds(speed);
                     
             }
-            visitedCells.Push(neighbor);
+            frontier.Push(neighbor);
         }
         yield return new WaitForSeconds(0.0f);
         Destroy(cursor);
         Debug.Log("finished Maze generation");
     }
-
+    /// <summary>
+    /// <c>GenerateMazePrim</c> uses the random prim algorithm to generate a perfect maze.   
+    /// </summary>
+    /// <remarks>
+    /// This algorithm works by first creating a maze full of walls.
+    /// in the initial step the first cell is selected, and is turned into part of the maze. All neighbors of this cell
+    /// are added to the frontier set which is a list of cells
+    /// in each iteration a random frontier wall cell is chosen, and in addition a random neighbor of this cell
+    /// which is part of the maze is selected and the wall between them is destroyed.
+    /// the algorithm terminates when the frontier is empty.
+    /// </remarks>
+    /// <returns> WaitForSeconds which sets the delay after each step of the algorithm. 
+    /// </returns>
     private IEnumerator GenerateMazePrim()
     {
-        System.Random rng = new System.Random();
-        Cell initialCell = cells[0, 0];
-        //cells[0, 0].visited = true;
+        var rng = new System.Random();
+        var initialCell = cells[0, 0];
         cells[0, 0].SetWall(false);
-        List<Cell> frontier = new List<Cell>();
+        
+        var frontier = new List<Cell>();
         frontier.AddRange(GetNeighbors(initialCell));
         while (frontier.Count > 0)
         {
-            Cell currCell = frontier[Random.Range(0, frontier.Count )];
+            var currCell = frontier[Random.Range(0, frontier.Count )];
             frontier.Remove(currCell);
-            Cell neighborInMaze = GetNeighbors(currCell).OrderBy(a => rng.Next()).ToList().Find(cell => !cell.isWall);
-            Vector2Int wallOffset =  new Vector2Int((currCell.x + neighborInMaze.x) / 2, (currCell.y + neighborInMaze.y) / 2);
+            //finding random neighbor which is already a cell
+            var neighborInMaze = GetNeighbors(currCell).OrderBy(
+                a => rng.Next())
+                .ToList().Find(cell => !cell.isWall);
+            var wallPos =  new Vector2Int((currCell.x + neighborInMaze.x) / 2, (currCell.y + neighborInMaze.y) / 2);
             currCell.SetWall(false);
-            cells[wallOffset.x, wallOffset.y].SetWall(false);
+            cells[wallPos.x, wallPos.y].SetWall(false);
             frontier.AddRange(GetNeighbors(currCell).FindAll(cell => cell.isWall && !frontier.Contains(cell)));
             if(speed > 0)yield return new WaitForSeconds(speed);
 
         }
         yield return new WaitForSeconds(0.0f);
         Debug.Log("finished Maze generation");
-        
     }
-
+    /// <summary>
+    /// <c>GenerateMazeKruskal</c> uses Kruskal's algorithm to generate a perfect maze.   
+    /// </summary>
+    /// <remarks>
+    /// This algorithm works by first creating a normal maze, and putting each cell into a separate <c> HashSet </c>,
+    /// and keeping a list of all none corner walls. 
+    /// in each iteration a random wall is chosen, and the algorithm looks if the cell divided by it belong to
+    /// two different sets. if this is the case this means there are not yet connected and the wall is deleted and
+    /// the sets are merged. if they are not distinct they are already connected and it would lead to loops thus
+    /// the wall is not destroyed
+    /// the algorithm terminates when there is only one set left which means that every cell is connected.
+    /// </remarks>
+    /// <returns> WaitForSeconds which sets the delay after each step of the algorithm. 
+    /// </returns>
     private IEnumerator GenerateMazeKruskal()
     {
-        HashSet<Cell>[,] cellSets = new HashSet<Cell>[mazeWidth, mazeHeight];
-        List<Cell> walls = new List<Cell>();
+        var cellSets = new HashSet<Cell>[mazeWidth, mazeHeight];
+        var walls = new List<Cell>();
         int setCount = 0;
         for (int x = 0; x < mazeWidth; x++)
         {
@@ -185,12 +249,12 @@ public class Maze : MonoBehaviour
         }
         while (setCount > 1)
         {
-            Cell currWall = walls[Random.Range(0, walls.Count)];
+            var currWall = walls[Random.Range(0, walls.Count)];
             walls.Remove(currWall);
             if (currWall.x % 2 != 0 && currWall.y % 2 == 0)
             {
-                HashSet <Cell> set1 = cellSets[currWall.x - 1, currWall.y];
-                HashSet <Cell> set2 = cellSets[currWall.x + 1, currWall.y];
+                var set1 = cellSets[currWall.x - 1, currWall.y];
+                var set2 = cellSets[currWall.x + 1, currWall.y];
                 if (!set1.SetEquals(set2))
                 {
                     
@@ -205,8 +269,8 @@ public class Maze : MonoBehaviour
             }
             else
             {
-                HashSet <Cell> set1 = cellSets[currWall.x, currWall.y - 1];
-                HashSet <Cell> set2 = cellSets[currWall.x, currWall.y + 1];
+                var set1 = cellSets[currWall.x, currWall.y - 1];
+                var set2 = cellSets[currWall.x, currWall.y + 1];
                 if (!set1.SetEquals(set2))
                 {
                     currWall.SetWall(false);
@@ -215,10 +279,8 @@ public class Maze : MonoBehaviour
                     {
                         cellSets[cell.x, cell.y] = set1;
                     }
-                    //Debug.LogError(set1.Count);
                     setCount--;
                 }
-                
             }
             if(speed > 0)yield return new WaitForSeconds(speed);
         }
@@ -239,19 +301,28 @@ public class Maze : MonoBehaviour
         yield return new WaitForSeconds(0.0f);
         Debug.Log("finished Maze generation");
     }
-
+    /// <summary>
+    /// <c> GetNeighbors </c> retrieves the neighbors of a given cell
+    /// </summary>
+    /// <param name="cell"> The cell of which to retrieve the neighbors</param>
+    /// <returns> A list of cells which are in bounds and yet not visited </returns>
     private List<Cell> GetNeighbors(Cell cell)
     {
-        List<Cell> neighbors = new List<Cell>();
+        var neighbors = new List<Cell>();
         if (cell.x > 1 && !cells[cell.x - 2, cell.y].visited) neighbors.Add(cells[cell.x - 2, cell.y]);
         if (cell.y > 1 && !cells[cell.x, cell.y - 2].visited) neighbors.Add(cells[cell.x , cell.y- 2]);
         if (cell.x < mazeWidth - 2 && !cells[cell.x + 2, cell.y].visited) neighbors.Add(cells[cell.x + 2, cell.y]);
         if (cell.y < mazeHeight - 2 && !cells[cell.x, cell.y + 2].visited) neighbors.Add(cells[cell.x, cell.y + 2]);
         return neighbors;
     }
-    private List<Cell> getWalls(Cell cell)
+    /// <summary>
+    /// <c> GetNeighbors </c> retrieves the neighboring walls of a given cell
+    /// </summary>
+    /// <param name="cell"> The cell of which to retrieve the neighbors</param>
+    /// <returns> A list of walls which are in bounds and yet not visited </returns>
+    private List<Cell> GetWalls(Cell cell)
     {
-        List<Cell> neighbors = new List<Cell>();
+        var neighbors = new List<Cell>();
         if (cell.x > 0 && !cells[cell.x - 1, cell.y].visited) neighbors.Add(cells[cell.x - 1, cell.y]);
         if (cell.y > 0 && !cells[cell.x, cell.y - 1].visited) neighbors.Add(cells[cell.x , cell.y- 1]);
         if (cell.x < mazeWidth - 1 && !cells[cell.x + 1, cell.y].visited) neighbors.Add(cells[cell.x + 1, cell.y]);
