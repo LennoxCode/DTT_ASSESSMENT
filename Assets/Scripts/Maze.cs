@@ -18,8 +18,9 @@ public class Maze : MonoBehaviour
     [SerializeField] private int mazeHeight;
     [SerializeField] private GameObject wallPrefab;
     [SerializeField] private float speed;
-
+    [SerializeField] private GameObject cursor;
     public static Action<Vector2Int> NewMazeEvent;
+    public Action OnMazeGenFinished;
     private Cell[,] cells;
 
     private void ClearGrid()
@@ -38,8 +39,7 @@ public class Maze : MonoBehaviour
     /// </summary>
     public void GenerateGrid()
     {
-       // ClearGrid();
-        
+
         if (cells != null)
         {
             var oldCells = cells;
@@ -135,17 +135,11 @@ public class Maze : MonoBehaviour
     {
         var initialCell = cells[0, 0];
         var frontier = new Stack<Cell>();
-        cells[0, 0].visited = true;
-        cells[0, 0].SetWall(false);
-        frontier.Push(cells[0,0]);
+        initialCell.visited = true;
+        initialCell.SetWall(false);
+        frontier.Push(initialCell);
         //initiating an additional sprite renderer to show where the algorithm is modifying walls
-        var transform1 = transform;
-        var cursor = Instantiate(wallPrefab, 
-                new Vector3(initialCell.x, initialCell.y, 10) + transform1.position, 
-                Quaternion.identity, 
-                transform1)
-            ;
-        cursor.GetComponent<SpriteRenderer>().color = Color.magenta;
+        SetCursor(new Vector2Int(initialCell.x, initialCell.y));
         while (frontier.Count > 0)
         {
             var currCell = frontier.Pop();
@@ -162,15 +156,20 @@ public class Maze : MonoBehaviour
             if (cells[wallPos.x, wallPos.y].isWall)
             {
                 cells[wallPos.x, wallPos.y].SetWall(false);
-                cursor.transform.position = new Vector3(neighbor.x, neighbor.y, -5) + transform.position;
+              
                 // only return if speed is greater zero because WaitForSeconds(0) still waits for next frame
-                if(speed > 0)yield return new WaitForSeconds(speed);
+                if (speed > 0)
+                {
+                    SetCursor(new Vector2Int(neighbor.x, neighbor.y));
+                    SetCursor(wallPos);
+                    yield return new WaitForSeconds(speed);
+                }
                     
             }
             frontier.Push(neighbor);
         }
+        OnMazeGenFinished?.Invoke();
         yield return new WaitForSeconds(0.0f);
-        Destroy(cursor);
         Debug.Log("finished Maze generation");
     }
     /// <summary>
@@ -205,10 +204,16 @@ public class Maze : MonoBehaviour
             var wallPos =  new Vector2Int((currCell.x + neighborInMaze.x) / 2, (currCell.y + neighborInMaze.y) / 2);
             currCell.SetWall(false);
             cells[wallPos.x, wallPos.y].SetWall(false);
+            
             frontier.AddRange(GetNeighbors(currCell).FindAll(cell => cell.isWall && !frontier.Contains(cell)));
-            if(speed > 0)yield return new WaitForSeconds(speed);
+            if (!(speed > 0)) continue;
+            SetCursor(new Vector2Int(currCell.x, currCell.y));
+            SetCursor(wallPos);
+            yield return new WaitForSeconds(speed);
+            
 
         }
+        OnMazeGenFinished?.Invoke();
         yield return new WaitForSeconds(0.0f);
         Debug.Log("finished Maze generation");
     }
@@ -240,7 +245,7 @@ public class Maze : MonoBehaviour
                     cellSets[x, y] = new HashSet<Cell> {cells[x, y]};
                     setCount++;
                 }
-                else if(x % 2 != 0 ^ y % 2 != 0)
+                else if(x % 2 != 0 ^ y % 2 != 0 && (!(mazeWidth % 2 ==0 && x == mazeWidth-1) && !(mazeHeight % 2 ==0 && y == mazeHeight-1)))
                 {
                     walls.Add((cells[x, y]));
                 }
@@ -251,39 +256,34 @@ public class Maze : MonoBehaviour
         {
             var currWall = walls[Random.Range(0, walls.Count)];
             walls.Remove(currWall);
+            HashSet<Cell> set1;
+            HashSet<Cell> set2;
             if (currWall.x % 2 != 0 && currWall.y % 2 == 0)
             {
-                var set1 = cellSets[currWall.x - 1, currWall.y];
-                var set2 = cellSets[currWall.x + 1, currWall.y];
-                if (!set1.SetEquals(set2))
-                {
-                    
-                    currWall.SetWall(false);
-                    set1.UnionWith(set2);
-                    foreach (var cell in set1)
-                    {
-                        cellSets[cell.x, cell.y] = set1;
-                    }
-                    setCount--;
-                }
+                set1 = cellSets[currWall.x - 1, currWall.y];
+                set2 = cellSets[currWall.x + 1, currWall.y];
+             
             }
             else
             {
-                var set1 = cellSets[currWall.x, currWall.y - 1];
-                var set2 = cellSets[currWall.x, currWall.y + 1];
-                if (!set1.SetEquals(set2))
-                {
-                    currWall.SetWall(false);
-                    set1.UnionWith(set2);
-                    foreach (var cell in set1)
-                    {
-                        cellSets[cell.x, cell.y] = set1;
-                    }
-                    setCount--;
-                }
+                set1 = cellSets[currWall.x, currWall.y - 1];
+                set2 = cellSets[currWall.x, currWall.y + 1];
             }
-            if(speed > 0)yield return new WaitForSeconds(speed);
+            if (set1.SetEquals(set2)) continue;
+            currWall.SetWall(false);
+            set1.UnionWith(set2);
+            foreach (var cell in set1)
+            {
+                cellSets[cell.x, cell.y] = set1;
+            }
+            setCount--;
+            if (!(speed > 0)) continue;
+            yield return new WaitForSeconds(speed);
+            //SetCursor(new Vector2Int(currCell.x, currCell.y));
+            SetCursor(new Vector2Int(currWall.x, currWall.y));
+
         }
+        OnMazeGenFinished?.Invoke();
         yield return new WaitForSeconds(0.0f);
         Debug.Log("finished Maze generation");
     }
@@ -328,6 +328,15 @@ public class Maze : MonoBehaviour
         if (cell.x < mazeWidth - 1 && !cells[cell.x + 1, cell.y].visited) neighbors.Add(cells[cell.x + 1, cell.y]);
         if (cell.y < mazeHeight - 1 && !cells[cell.x, cell.y + 1].visited) neighbors.Add(cells[cell.x, cell.y + 1]);
         return neighbors;
+    }
+
+    private void SetCursor(Vector2Int at)
+    {
+        Instantiate(cursor, 
+                new Vector3(at.x, at.y, -5) + transform.position, 
+                Quaternion.identity, 
+                transform)
+            ;
     }
     public void SetWidth(int newWidth)
     {

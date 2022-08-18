@@ -27,6 +27,7 @@ namespace MyNamespace
         
         void Start()
         {
+            mazeGen.OnMazeGenFinished += () => { SetSliders(true);};
             OnWidthChanged();
             OnHeightChanged();
             OnSpeedValueChanged();
@@ -94,7 +95,14 @@ namespace MyNamespace
         /// </summary>
         public void OnGeneratePressed()
         {
+            SetSliders(false);
             mazeGen.RunGeneration((MazeAlgorithm)algoDropdown.value);
+        }
+
+        private void SetSliders(bool value)
+        {
+            widthSlider.interactable = value;
+            heightSlider.interactable = value;
         }
     }
 

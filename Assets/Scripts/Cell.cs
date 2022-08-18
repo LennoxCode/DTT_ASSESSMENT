@@ -15,32 +15,7 @@ public class Cell
     public bool visited = false;
     public bool isWall {get; private set; }
     private SpriteRenderer renderer;
-    /// <summary>
-    /// creates a new cell in using the given parameters. It is automatically decided if the cell is a wall or not
-    /// to create an alternating pattern of wall and cell.
-    /// </summary>
-    /// <param name="row"> the row in grid space of the cell</param>
-    /// <param name="col"> the column in grid space of the cell</param>
-    /// <param name="cellSize">the physical size of the cell</param>
-    /// <param name="wallPrefab">prefab for the visual cell</param>
-    /// <param name="parent"> parent transform to instantiate as child of maze</param>
-    public Cell(int row, int col, int cellSize, GameObject wallPrefab, Transform parent)
-    {
-        Maze.NewMazeEvent += DestroyCell;
-        x = row;
-        y = col;
-        xPos = row * cellSize;
-        xPos = col * cellSize;
-        if (row % 2 != 0 || col % 2 != 0) isWall = true;
-        else isWall = false;
-        
-        renderer = Object.Instantiate(wallPrefab, 
-            new Vector3(x, y, 0) + parent.position, 
-            Quaternion.identity, 
-            parent)
-            .GetComponent<SpriteRenderer>();
-        renderer.color = isWall ? Color.black : Color.white;
-    }
+ 
     /// <summary>
     /// creates a new cell in using the given parameters. It is automatically decided if the cell is a wall or not
     /// to create an alternating pattern of wall and cell.
@@ -51,25 +26,38 @@ public class Cell
     /// <param name="wallPrefab">prefab for the visual cell</param>
     /// <param name="parent"> parent transform to instantiate as child of maze</param>
     /// <param name="isWall"> if the cell is a wall or not</param>
+    
+    /// <summary>
+    /// creates a new cell in using the given parameters. It is automatically decided if the cell is a wall or not
+    /// to create an alternating pattern of wall and cell.
+    /// </summary>
+    /// <param name="row"> the row in grid space of the cell</param>
+    /// <param name="col"> the column in grid space of the cell</param>
+    /// <param name="cellSize">the physical size of the cell</param>
+    /// <param name="wallPrefab">prefab for the visual cell</param>
+    /// <param name="parent"> parent transform to instantiate as child of maze</param>
+    public Cell(int row, int col, int cellSize, GameObject wallPrefab, Transform parent) 
+        : this(row, col, cellSize, wallPrefab, parent, (row % 2 != 0 || col % 2 != 0))
+    {
+    }
     public Cell(int row, int col, int cellSize, GameObject wallPrefab, Transform parent, bool isWall)
     {
        
-        x = row * cellSize ;
-        y = col * cellSize;
-   
-       
+        x = row;
+        y = col;
+        xPos = row * cellSize;
+        xPos = col * cellSize;
+
+        Maze.NewMazeEvent += DestroyCell;
         renderer = Object.Instantiate(wallPrefab, 
                 new Vector3(x, y, 0) + parent.position, 
                 Quaternion.identity, 
                 parent)
             .GetComponent<SpriteRenderer>();
      
-        SetWall(isWall);
-        // renderer = new SpriteRenderer();
-        //renderer.color = Color.black;
-        //renderer.sprite = sprite;
-
+        SetWall(isWall); 
     }
+ 
     /// <summary>
     /// sets the isWall variable and automatically changes appearance based on the new value
     /// </summary>
