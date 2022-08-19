@@ -25,9 +25,15 @@ namespace MyNamespace
         [SerializeField] private Text speedDisplay;
         [SerializeField] private Slider speedSlider;
         [SerializeField] private BaseMaze mazeGen;
-        
+        [SerializeField] private LineRenderer lineRenderer;
+        [SerializeField] private Button solveButton;
         void Start()
         {
+            BaseMaze.NewMazeEvent += i =>
+            {
+                solveButton.gameObject.SetActive(false);
+                lineRenderer.positionCount = 0;
+            };
             mazeGen.OnMazeGenFinished += () => { SetSliders(true);};
             OnWidthChanged();
             OnHeightChanged();
@@ -66,7 +72,7 @@ namespace MyNamespace
             int sliderVal = (int) widthSlider.value;
             widthDisplay.text = "" + sliderVal;
             mazeGen.SetWidth(sliderVal);
-            mazeGen.GenerateGrid();
+            mazeGen.GenerateGrid(false);
         }
         /// <summary>
         /// Callback function when the slider value of the height slider changes the interface is updated accordingly
@@ -77,7 +83,7 @@ namespace MyNamespace
             int sliderVal = (int) heightSlider.value;
             heightDisplay.text = "" + sliderVal;
             mazeGen.SetHeight(sliderVal);
-            mazeGen.GenerateGrid();
+            mazeGen.GenerateGrid(false);
         }
         /// <summary>
         /// Callback function when the algorithm changes. It is not necessary to update this for the model
@@ -94,14 +100,28 @@ namespace MyNamespace
         public void OnGeneratePressed()
         {
             SetSliders(false);
+            lineRenderer.positionCount = 0;
             mazeGen.RunGeneration((MazeAlgorithm)algoDropdown.value);
         }
 
+        public void OnSolvePressed()
+        { 
+            var path = mazeGen.Solve();
+            lineRenderer.positionCount = path.Count;
+            for (int i = 0; i < path.Count; i++)
+            {
+                lineRenderer.SetPosition(i, new Vector3(path[i].xPos, path[i].yPos, -5));
+            }
+        }
+        
         private void SetSliders(bool value)
         {
             widthSlider.interactable = value;
             heightSlider.interactable = value;
+            solveButton.gameObject.SetActive(value);
+
         }
+        
     }
 
 }

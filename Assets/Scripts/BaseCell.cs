@@ -12,8 +12,8 @@ namespace DefaultNamespace
     {
         public int x { get; protected set;}
         public int y { get; protected set;}
-        public int xPos { get; protected set;}
-        public int yPos { get; protected set;}
+        public float xPos { get; protected set;}
+        public float yPos { get; protected set;}
         public bool visited = false;
         public bool isWall {get; protected set; }
         protected SpriteRenderer renderer;
@@ -45,6 +45,10 @@ namespace DefaultNamespace
             DestroyCell();
         }
 
+        public void SetColor(Color color)
+        {
+            renderer.color = color;
+        }
         public abstract void Reset();
     }
 }

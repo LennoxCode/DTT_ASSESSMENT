@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,96 +14,31 @@ using Random = UnityEngine.Random;
 /// </summary>
 public class Maze : BaseMaze
 {
-    private void ClearGrid()
-    {
-        if (cells != null)
-        {
-            foreach (var cell in cells)
-            {
-                cell.DestroyCell();
-            }
-        }
-    }
+
     /// <summary>
     /// generates a new grid of the size given my the class variables. if another grid already exists the already
     /// present cells are reused instead of destroyed because the instantiation of the GameObjects is very expensive.
     /// </summary>
-    public override void GenerateGrid()
+    public override void GenerateGrid(bool wallsOnly)
     {
-
-        if (cells != null)
-        {
-            var oldCells = cells;
-            cells = new Cell[mazeWidth, mazeHeight];
-            for (int x = 0; x < mazeWidth; x++)
-            {
-                for (int y = 0; y < mazeHeight; y++)
-                {
-                    if (x < oldCells.GetLength(0) && y < oldCells.GetLength(1))
-                    {
-                        cells[x,y] = oldCells[x, y];
-                        cells[x,y].Reset();
-                    }
-                    else cells[x, y] = new Cell(x, y, cellSize, wallPrefab, transform);
-                }
-            }
-
-        }
-        else
-        {
-            cells = new Cell[mazeWidth, mazeHeight];
-            for (int x = 0; x < mazeWidth; x++)
-            {
-                for (int y = 0; y < mazeHeight; y++)
-                {
-                    cells[x, y] = new Cell(x, y, cellSize, wallPrefab, transform);
-                }
-            }
-        }
-        NewMazeEvent?.Invoke(new Vector2Int(mazeWidth ,mazeHeight));
-    }
-    /// <summary>
-    /// this function also generates a grid of the given size. The main difference is that this grid exclusively
-    /// consists of walls because the Prim algorithm demands a grid of walls 
-    /// </summary>
-    private void GenerateGridWallsOnly()
-    {
-        ClearGrid();
+        var oldCells = cells;
         cells = new Cell[mazeWidth, mazeHeight];
         for (int x = 0; x < mazeWidth; x++)
         {
             for (int y = 0; y < mazeHeight; y++)
             {
-                cells[x, y] = new Cell(x, y, cellSize, wallPrefab, transform, true);
+                if (oldCells != null && x < oldCells.GetLength(0) && y < oldCells.GetLength(1))
+                {
+                    cells[x, y] = oldCells[x, y];
+                    cells[x, y].Reset();
+                    if (wallsOnly) cells[x, y].SetWall(true);
+                }
+                else if (!wallsOnly) cells[x, y] = new Cell(x, y, cellSize, wallPrefab, transform);
+                else cells[x, y] = new Cell(x, y, cellSize, wallPrefab, transform, true);
             }
         }
+        NewMazeEvent?.Invoke(new Vector2Int(mazeWidth ,mazeHeight));
     }
-    /// <summary>
-    /// a public wrapper function which enables the controller to select grid options without further worrying
-    /// about the individual implementations of each algorithm and the preparation needed to run it. 
-    /// </summary>
-    /// <param name="algorithm">An enum which represents any of the possible options for maze generation</param>
-    public override void RunGeneration(MazeAlgorithm algorithm)
-    {
-        // stopping old maze generation if it is already running
-        StopAllCoroutines();
-        switch (algorithm)
-        {
-            case MazeAlgorithm.DepthFirst:
-                GenerateGrid();
-                StartCoroutine(GenerateMaze());
-                break;
-            case MazeAlgorithm.Prim:
-                GenerateGridWallsOnly();
-                StartCoroutine(GenerateMazePrim());
-                break;
-            case MazeAlgorithm.Kruskal:
-                GenerateGrid();
-                StartCoroutine(GenerateMazeKruskal());
-                break; 
-        }
-    }
-    
     /// <summary>
     /// <c>GenerateMaze</c> uses the depth first algorithm to generate a perfect maze.   
     /// </summary>
@@ -303,21 +239,39 @@ public class Maze : BaseMaze
         return neighbors;
     }
     /// <summary>
+    /// this function defines the start and finish of the maze. Maze holds a reference to both respectively
+    /// the color of start and finish is changed to give visual indication
+    /// </summary>
+    protected override void SetStartFinish()
+    {
+        var initialCell = cells[Random.Range(0, mazeWidth-1), Random.Range(0, mazeHeight -1)];
+        while(initialCell.isWall) initialCell = cells[Random.Range(0, mazeWidth -1), Random.Range(0, mazeHeight-1)];
+        var target = cells[Random.Range(0, mazeWidth-1), Random.Range(0, mazeHeight-1)];
+        while(target.isWall || target == initialCell) target = cells[Random.Range(0, mazeWidth-1), Random.Range(0, mazeHeight-1)];
+        startCell = initialCell;
+        endCell = target;
+        startCell.SetColor(Color.green);
+        endCell.SetColor(Color.blue);
+    }
+   
+    /// <summary>
     /// <c> GetNeighbors </c> retrieves the neighboring walls of a given cell
     /// </summary>
     /// <param name="cell"> The cell of which to retrieve the neighbors</param>
     /// <returns> A list of walls which are in bounds and yet not visited </returns>
-    private List<BaseCell> GetWalls(BaseCell cell)
+    protected override List<BaseCell> GetReachableNeighbors(BaseCell cell)
     {
         var neighbors = new List<BaseCell>();
-        if (cell.x > 0 && !cells[cell.x - 1, cell.y].visited) neighbors.Add(cells[cell.x - 1, cell.y]);
-        if (cell.y > 0 && !cells[cell.x, cell.y - 1].visited) neighbors.Add(cells[cell.x , cell.y- 1]);
-        if (cell.x < mazeWidth - 1 && !cells[cell.x + 1, cell.y].visited) neighbors.Add(cells[cell.x + 1, cell.y]);
-        if (cell.y < mazeHeight - 1 && !cells[cell.x, cell.y + 1].visited) neighbors.Add(cells[cell.x, cell.y + 1]);
+        if (cell.x > 0 && !cells[cell.x - 1, cell.y].isWall) neighbors.Add(cells[cell.x - 1, cell.y]);
+        if (cell.y > 0 && !cells[cell.x, cell.y - 1].isWall) neighbors.Add(cells[cell.x , cell.y- 1]);
+        if (cell.x < mazeWidth - 1 && !cells[cell.x + 1, cell.y].isWall) neighbors.Add(cells[cell.x + 1, cell.y]);
+        if (cell.y < mazeHeight - 1 && !cells[cell.x, cell.y + 1].isWall) neighbors.Add(cells[cell.x, cell.y + 1]);
         return neighbors;
     }
-
- 
+    /// <summary>
+    /// instantiates a cursor object for visual indication at a given position which will fade over time
+    /// </summary>
+    /// <param name="at">the position where the cursor is going to be initated</param>
     private void SetCursor(Vector2Int at)
     {
         Instantiate(cursor, 

@@ -33,14 +33,15 @@ public class Cell : BaseCell
 
     public Cell(int row, int col, int cellSize, GameObject wallPrefab, Transform parent, bool isWall)
     {
+        var parentPos = parent.position;
         x = row;
         y = col;
-        xPos = row * cellSize;
-        xPos = col * cellSize;
+        xPos = row * cellSize + parentPos.x;
+        yPos = col * cellSize + parentPos.y;
 
         Maze.NewMazeEvent += DestroyCell;
         renderer = Object.Instantiate(wallPrefab, 
-                new Vector3(x, y, 0) + parent.position, 
+                new Vector3(xPos, yPos, 0), 
                 Quaternion.identity, 
                 parent)
             .GetComponent<SpriteRenderer>();
