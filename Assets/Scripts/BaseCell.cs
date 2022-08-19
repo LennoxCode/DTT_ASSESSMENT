@@ -2,6 +2,12 @@
 
 namespace DefaultNamespace
 {
+    /// <summary>
+    /// a class which represents all everything that belongs to a given cell e.g. position, if it is a wall, and
+    /// if it has been visited by the algorithm so far. In addition every cell holds a reference to a <c> SpriteRenderer</c>
+    /// to enable it to change color based on the wall state. saving the coordinates in grid space on cells enables
+    /// easier determination of neighborhood relations
+    /// </summary>
     public abstract class BaseCell
     {
         public int x { get; protected set;}

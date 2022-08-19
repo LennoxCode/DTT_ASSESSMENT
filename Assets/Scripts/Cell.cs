@@ -2,16 +2,11 @@ using DefaultNamespace;
 using UnityEngine;
 
 /// <summary>
-/// a class which represents all everything that belongs to a given cell e.g. position, if it is a wall, and
-/// if it has been visited by the algorithm so far. In addition every cell holds a reference to a <c> SpriteRenderer</c>
-/// to enable it to change color based on the wall state. saving the coordinates in grid space on cells enables
-/// easier determination of neighborhood relations
+/// represents a cell in a rectangular grid. the main difference to the base cell is how it is determined if the
+/// wall is a cell or not and how to world position is calculated from the grid position.
 /// </summary>
 public class Cell : BaseCell
 {
-   
- 
-   
     /// <summary>
     /// creates a new cell in using the given parameters. It is automatically decided if the cell is a wall or not
     /// to create an alternating pattern of wall and cell.

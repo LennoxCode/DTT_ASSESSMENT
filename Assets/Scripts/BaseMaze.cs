@@ -6,7 +6,10 @@ using MyNamespace;
 using UnityEngine;
 namespace DefaultNamespace
 {
-    
+    /// <summary>
+    /// Base class which represents a maze. provided base-functionality for setting attributes. Each derives
+    /// class has to implement the abstract methods to generate Mazes.
+    /// </summary>
     public abstract class BaseMaze : MonoBehaviour
     {
         public static Action<Vector2Int> NewMazeEvent;

@@ -101,9 +101,6 @@ public class Maze : BaseMaze
                 StartCoroutine(GenerateMazeKruskal());
                 break; 
         }
-        
-       
-        
     }
     
     /// <summary>
@@ -320,6 +317,7 @@ public class Maze : BaseMaze
         return neighbors;
     }
 
+ 
     private void SetCursor(Vector2Int at)
     {
         Instantiate(cursor, 

@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace DefaultNamespace
 {
+    /// <summary>
+    /// this class represents a cursor to showcase the maze generation algorithms. each frame the alpha is reduced
+    /// until it reaches zero and the object is destroys. this gives the effect of leaving behind a trail
+    /// </summary>
     public class Cursor : MonoBehaviour
     {
         [SerializeField] private Color cursorColor;
